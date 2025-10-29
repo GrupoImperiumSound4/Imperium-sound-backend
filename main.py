@@ -19,7 +19,8 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://imperium-sound-frontend-olby.vercel.app",  # TU FRONTEND
+    "https://imperium-sound-frontend-olby.vercel.app",
+    "https://imperium-sound-backend.vercel.app",  # TU FRONTEND
 ]
 
 app.add_middleware(
@@ -86,7 +87,7 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
             secure=False,        # ← CAMBIA A FALSE
             samesite="lax",
             max_age=7 * 24 * 60 * 60,
-            path="/inicio-sesion",
+            path="/",
                 )
 
         return {
