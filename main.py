@@ -86,7 +86,7 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
             secure=False,        # ← CAMBIA A FALSE
             samesite="lax",
             max_age=7 * 24 * 60 * 60,
-            path="/",
+            path="/inicio-sesion",
                 )
 
         return {
