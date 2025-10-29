@@ -83,12 +83,11 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
             key="access_token",
             value=token,
             httponly=True,
-            secure=True,
+            secure=False,        # ← CAMBIA A FALSE
             samesite="lax",
             max_age=7 * 24 * 60 * 60,
             path="/",
-            domain=".vercel.app"  # ← ESTO PERMITE SUBDOMINIOS
-        )
+                )
 
         return {
             "message": f"Bienvenido {user.name}",
