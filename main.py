@@ -2,13 +2,12 @@ from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form, Res
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
-from .database import SessionDepends
+from database import SessionDepends
 from sqlalchemy import text
 import jwt
-import os
 from typing import Optional
 
-SECRET_KEY = os.getenv("SECRET_KEY", "KOKOROKOOOO")
+SECRET_KEY = "KOKOROKOOOO"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
@@ -19,7 +18,7 @@ origins = [
     "http://localhost:5174",
     "http://127.0.0.1:5173",
     "http://localhost:3000", 
-    "https://imperium-sound-frontend-olby.vercel.app", 
+    "https://imperium-sound-frontend-olby.vercel.app",
     "https://imperium-sound-backend.vercel.app/",
     "http://localhost:8000"
 ]
@@ -79,7 +78,7 @@ def crear_usuario(db: SessionDepends, data: Registro):
         raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
 
 @app.post("/login")
-async def login_user(data: Login, db: SessionDepends, response: Response):
+async def login_user(data: Login, db: SessionDepends, respone: Response):
     try:
         consulta = db.execute(
             text("SELECT * FROM users WHERE email = :email"), 
@@ -97,7 +96,7 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
         token = create_access_token(data=token_data)
 
 
-        response.set_cookie(
+        respone.set_cookie(
             key="access_token",
             value=token,
             httponly=True,
@@ -229,5 +228,3 @@ async def crear_audio(db: SessionDepends, audio: UploadFile = File(...), decibel
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"error al guardar el audio {str(e)}")
-    
-handler = app
