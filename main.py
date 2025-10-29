@@ -78,7 +78,7 @@ def crear_usuario(db: SessionDepends, data: Registro):
         raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
 
 @app.post("/login")
-async def login_user(data: Login, db: SessionDepends, respone: Response):
+async def login_user(data: Login, db: SessionDepends, response: Response):
     try:
         consulta = db.execute(
             text("SELECT * FROM users WHERE email = :email"), 
@@ -96,13 +96,14 @@ async def login_user(data: Login, db: SessionDepends, respone: Response):
         token = create_access_token(data=token_data)
 
 
-        respone.set_cookie(
+        response.set_cookie(
             key="access_token",
             value=token,
             httponly=True,
             secure=False,
             samesite="lax",
             max_age=604800,
+            path="/"
         )
 
         return {"message": f"Bienvenido {consulta.name}",
@@ -205,7 +206,13 @@ async def crear_audio(db: SessionDepends, audio: UploadFile = File(...), decibel
         if Tamaño_archivo > Tamaño_maximo:
             raise HTTPException(status_code=400, detail="Mano ese archivo es muuuy grande. Maximo 20Mb")
         
-            verificar_punto = db.execute(text("SELECT id FROM point  WHERE id = :id "), {"id": id_point})
+            verificar_punto = db.execute(
+                text("SELECT id FROM point WHERE id = :id"), 
+                {"id": id_point}
+            ).fetchone()
+
+            if not verificar_punto:
+                raise HTTPException(status_code=404, detail=f"El punto con id {id_point} no existe")
 
         consulta = db.execute(text("INSERT INTO sounds (sound, decibels, date, id_point) VALUES (:sound, :decibels, :date, :id_point) RETURNING id, date"),
                               {"sound": audio_data,
