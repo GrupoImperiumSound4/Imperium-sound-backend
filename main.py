@@ -1,248 +1,126 @@
-from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form, Response
-from pydantic import BaseModel
+# main.py
+from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime, timedelta
+from pydantic import BaseModel
 from database import SessionDepends
 from sqlalchemy import text
 import jwt
+from datetime import datetime, timedelta
 from typing import Optional
 
+# ================= CONFIGURACIÓN =================
 SECRET_KEY = "KOKOROKOOOO"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
 app = FastAPI()
 
+# Orígenes permitidos (ajusta según tu dominio real)
 origins = [
     "http://localhost:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000", 
-    "https://imperium-sound-frontend-olby.vercel.app",
-    "https://imperium-sound-backend.vercel.app",
-    "http://localhost:8000"
+    "http://localhost:3000",
+    "https://imperium-sound-frontend-olby.vercel.app",  # TU FRONTEND
 ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = origins,
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_credentials=True,   # Necesario para cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-class Registro(BaseModel):
-    name: str
+# ================= MODELOS =================
+class Login(BaseModel):
     email: str
     password: str
 
-class Login(BaseModel):
-    email: str 
-    password: str
-
+# ================= JWT =================
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    expire = datetime.utcnow() + (expires_delta or timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def verify_token(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError:
         return None
     except jwt.JWTError:
         return None
-    
+
 def get_token_from_request(request: Request) -> Optional[str]:
     token = request.cookies.get("access_token")
     if token:
         return token
-    
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        return auth_header.replace("Bearer ", "")
-    
+    auth = request.headers.get("Authorization")
+    if auth and auth.startswith("Bearer "):
+        return auth.split(" ")[1]
     return None
 
-
-
-@app.get("/")
-async def root(request: Request):
-    return {"message": "Bienvenido"}
-
-@app.post("/crear_usuario")
-def crear_usuario(db: SessionDepends, data: Registro):
-    try:
-        db.execute(
-            text("INSERT INTO users (name, email, password) VALUES (:name, :email, :password)"),
-            {"name": data.name, "email": data.email, "password": data.password}
-        )
-        db.commit()
-        return {"message": "usuario creado con exito"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
-
+# ================= RUTAS =================
 @app.post("/login")
 async def login_user(data: Login, db: SessionDepends, response: Response):
     try:
-        consulta = db.execute(
-            text("SELECT * FROM users WHERE email = :email"), 
+        user = db.execute(
+            text("SELECT * FROM users WHERE email = :email"),
             {"email": data.email}
         ).fetchone()
 
-        if not consulta or consulta.password != data.password:
+        if not user or user.password != data.password:
             raise HTTPException(status_code=400, detail="Credenciales inválidas")
-        
+
         token_data = {
-            "user_id": consulta.id,
-            "email": consulta.email,
-            "name": consulta.name
+            "user_id": user.id,
+            "email": user.email,
+            "name": user.name
         }
-        token = create_access_token(data=token_data)
+        token = create_access_token(token_data)
 
-
+        # Cookie segura para producción
         response.set_cookie(
             key="access_token",
             value=token,
             httponly=True,
-            secure=False,
+            secure=True,
             samesite="lax",
-            max_age=604800,
+            max_age=7 * 24 * 60 * 60,
             path="/",
+            domain=".vercel.app"  # ← ESTO PERMITE SUBDOMINIOS
         )
 
-        return {"message": f"Bienvenido {consulta.name}",
-                "user": {
-                    "id": consulta.id,
-                    "name": consulta.name,
-                    "email":consulta.email
-                }
-                }
+        return {
+            "message": f"Bienvenido {user.name}",
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email
+            }
+        }
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error del servidor: {str(e)}")
-    
-#--------------Token-----------------------------
 
-@app.get("/valid")
-async def validate_token(request: Request):
-    token = get_token_from_request(request)
-    
-    if not token:
-        raise HTTPException(status_code=401, detail="No autenticado")
-    
-    payload = verify_token(token)
-    
-    if not payload:
-        raise HTTPException(status_code=401, detail="Token inválido")
-    
-    return payload
-
-@app.post("/logout")
-async def logout(response: Response):
-    response.delete_cookie(key="access_token")
-    return {"message": "Sesión cerrada exitosamente"}
-
+# Ruta protegida de ejemplo
 @app.get("/me")
 async def get_current_user(request: Request, db: SessionDepends):
     token = get_token_from_request(request)
-    
     if not token:
         raise HTTPException(status_code=401, detail="No autenticado")
-    
+
     payload = verify_token(token)
-    
     if not payload:
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
-    
-    try:
-        user = db.execute(
-            text("SELECT id, name, email FROM users WHERE id = :user_id"),
-            {"user_id": payload.get("user_id")}
-        ).fetchone()
-        
-        if not user:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
-        return {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener datos del usuario: {str(e)}")
-#-------------sonidos-----------------
 
-@app.get("/puntos")
-async def obt_sonidos(db: SessionDepends):
-    try:
-        consulta = db.execute(text("SELECT * FROM point ORDER BY floor, area")).fetchall()
+    user = db.execute(
+        text("SELECT id, name, email FROM users WHERE id = :user_id"),
+        {"user_id": payload["user_id"]}
+    ).fetchone()
 
-        puntos = [
-            {
-                "id": columna.id,
-                "floor": columna.floor,
-                "area": columna.area
-            }
-            for columna in consulta
-        ]
-        return{
-            "puntos": puntos,
-            "cuenta": len(puntos)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"error al obtener los puntos: {str(e)}")
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-@app.post("/Registro-sonido")
-async def crear_audio(db: SessionDepends, audio: UploadFile = File(...), decibels: float = Form(...), id_point: int = Form(...)):
-    try:
-        tipos = ["audio/webm", "audio/wav", "audio/mp3", "audio/mpeg", "audio/ogg"]
-        if audio.content_type not in tipos:
-            raise HTTPException(status_code=400, detail="tipo de archivo no permitido")
-        #leer el audio
-        audio_data = await audio.read()
-        Tamaño_archivo = len(audio_data)
-        #tamaño maximo del audio: 20Mb
-        Tamaño_maximo = 20 * 1024 * 1024
-
-        if Tamaño_archivo > Tamaño_maximo:
-            raise HTTPException(status_code=400, detail="Mano ese archivo es muuuy grande. Maximo 20Mb")
-        
-            verificar_punto = db.execute(
-                text("SELECT id FROM point WHERE id = :id"), 
-                {"id": id_point}
-            ).fetchone()
-
-            if not verificar_punto:
-                raise HTTPException(status_code=404, detail=f"El punto con id {id_point} no existe")
-
-        consulta = db.execute(text("INSERT INTO sounds (sound, decibels, date, id_point) VALUES (:sound, :decibels, :date, :id_point) RETURNING id, date"),
-                              {"sound": audio_data,
-                               "decibels": decibels,
-                               "date": datetime.utcnow(),
-                               "id_point": id_point
-                               }
-                              )
-
-        db.commit()
-        insertado = consulta.fetchone()
-
-        return {
-            "mesagge": "Audio guardado como era",  "id": insertado.id,  "decibels": decibels,   "id_point": id_point,
-            "Tamaño_archivo": Tamaño_archivo,   "content_type": audio.content_type,   "date": insertado.date.isoformat()
-        }
-    except HTTPException:
-        db.rollback()
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"error al guardar el audio {str(e)}")
+    return {"id": user.id, "name": user.name, "email": user.email}
