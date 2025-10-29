@@ -57,6 +57,17 @@ def verify_token(token: str):
         return None
     except jwt.JWTError:
         return None
+    
+def get_token_from_request(request: Request) -> Optional[str]:
+    token = request.cookies.get("access_token")
+    if token:
+        return token
+    
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header.replace("Bearer ", "")
+    
+    return None
 
 
 
@@ -103,7 +114,7 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
             secure=False,
             samesite="lax",
             max_age=604800,
-            path="/"
+            path="/",
         )
 
         return {"message": f"Bienvenido {consulta.name}",
@@ -122,7 +133,7 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
 
 @app.get("/valid")
 async def validate_token(request: Request):
-    token = request.cookies.get("access_token")
+    token = get_token_from_request(request)
     
     if not token:
         raise HTTPException(status_code=401, detail="No autenticado")
@@ -141,7 +152,7 @@ async def logout(response: Response):
 
 @app.get("/me")
 async def get_current_user(request: Request, db: SessionDepends):
-    token = request.cookies.get("access_token")
+    token = get_token_from_request(request)
     
     if not token:
         raise HTTPException(status_code=401, detail="No autenticado")
