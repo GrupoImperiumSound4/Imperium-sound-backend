@@ -59,10 +59,6 @@ def verify_token(token: str):
         return None
     
 def get_token_from_request(request: Request) -> Optional[str]:
-    token = request.cookies.get("access_token")
-    if token:
-        return token
-    
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         return auth_header.replace("Bearer ", "")
@@ -110,7 +106,7 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
         response.set_cookie(
             key="access_token",
             value=token,
-            httponly=True,
+            #httponly=True,
             secure=False,
             samesite="lax",
             max_age=604800,
@@ -118,6 +114,7 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
         )
 
         return {"message": f"Bienvenido {consulta.name}",
+                "access_token": token, 
                 "user": {
                     "id": consulta.id,
                     "name": consulta.name,
