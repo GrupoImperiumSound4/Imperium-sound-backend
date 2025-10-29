@@ -10,7 +10,7 @@ cryptography==46.0.2
 deprecation==2.1.0
 dnspython==2.7.0
 email_validator==2.2.0
-fastapi==0.116.1
+fastapi==0.95.2
 fastapi-cli==0.0.8
 fastapi-cloud-cli==0.1.5
 greenlet==3.2.3
@@ -33,8 +33,8 @@ postgrest==2.22.0
 propcache==0.4.1
 psycopg2-binary==2.9.10
 pycparser==2.23
-pydantic==2.11.5
-pydantic_core==2.33.2
+pydantic==1.10.13
+pydantic-core==2.6.3
 pygame==2.6.1
 Pygments==2.19.1
 PyJWT==2.9.0
@@ -53,13 +53,14 @@ SQLAlchemy==2.0.42
 starlette==0.46.2
 storage3==2.22.0
 StrEnum==0.4.15
+supabase==2.0.0
 supabase-auth==2.22.0
 supabase-functions==2.22.0
 typer==0.16.0
 typing-inspection==0.4.1
 typing_extensions==4.13.2
 urllib3==2.5.0
-uvicorn==0.34.2
+uvicorn==0.22.0
 watchfiles==1.0.5
 websockets==15.0.1
 yarl==1.22.0
