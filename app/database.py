@@ -2,8 +2,10 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
-
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 USER = os.getenv("user")
 PASSWORD = os.getenv("password")
 HOST = os.getenv("host")
