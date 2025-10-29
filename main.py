@@ -19,7 +19,7 @@ origins = [
     "http://127.0.0.1:5173",
     "http://localhost:3000", 
     "https://imperium-sound-frontend-olby.vercel.app",
-    "https://imperium-sound-backend.vercel.app/",
+    "https://imperium-sound-backend.vercel.app",
     "http://localhost:8000"
 ]
 app.add_middleware(
