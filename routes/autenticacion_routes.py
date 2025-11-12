@@ -13,7 +13,6 @@ def crear_usuario(db: SessionDepends, data: Registro):
 async def login_user(data: Login, db: SessionDepends, response: Response):
     result = AuthService.login_user(db, data)
     
-    # Configurar cookie
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
@@ -22,7 +21,6 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
         samesite="lax",
         max_age=604800,
         path="/",
-        domain=None
     )
 
     
