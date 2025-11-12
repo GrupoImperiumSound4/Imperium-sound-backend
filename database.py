@@ -1,20 +1,8 @@
 from typing import Annotated
 from fastapi import Depends
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-URL_DATABASE = os.getenv("URL_DATABASE")
-
-if not URL_DATABASE:
-    raise ValueError(
-        "URL_DATABASE no está configurado"
-    )
-if URL_DATABASE:
-    print("ESO fueee")
+from configuracion import URL_DATABASE
 
 engine = create_engine(URL_DATABASE)
 
@@ -29,3 +17,4 @@ def get_db():
         yield session
 
 SessionDepends = Annotated[Session, Depends(get_db)]
+
