@@ -17,7 +17,6 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        httponly=True,
         secure=True,       # False para localhost, True para HTTPS en producción
         samesite="lax",
         max_age=604800,

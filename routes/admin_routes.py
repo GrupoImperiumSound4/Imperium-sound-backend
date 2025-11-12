@@ -5,7 +5,6 @@ from utils.dependencias import get_current_user_dependency
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
-# Middleware para verificar que el usuario sea admin
 def verify_admin(current_user: dict = Depends(get_current_user_dependency)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="No tienes permisos de administrador")
