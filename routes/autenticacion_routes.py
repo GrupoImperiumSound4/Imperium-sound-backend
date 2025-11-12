@@ -20,8 +20,8 @@ async def login_user(data: Login, db: SessionDepends, response: Response, reques
         key="access_token",
         value=result["access_token"],
         httponly=True,
-        secure=is_production,  # True en HTTPS (producción)
-        samesite="none" if is_production else "lax",  # "none" para cross-origin
+        secure=is_production,  # True en HTTPS
+        samesite="none" if is_production else "lax",
         max_age=604800,  # 7 días
         path="/",
         domain=None
@@ -48,10 +48,18 @@ async def get_current_user_info(request: Request, db: SessionDepends):
     return AuthService.get_current_user(db, payload["user_id"])
 
 @router.post("/logout")
-async def logout(response: Response):
-    response.delete_cookie(
+async def logout(response: Response, request: Request):
+    is_production = "vercel.app" in str(request.url) or "vercel.app" in request.headers.get("origin", "")
+    
+    response.set_cookie(
         key="access_token",
+        value="",
+        httponly=True,
+        secure=is_production,
+        samesite="none" if is_production else "lax",
+        max_age=0,  
         path="/",
         domain=None
-    )    
+    )
+ 
     return {"message": "Sesión cerrada exitosamente"}
