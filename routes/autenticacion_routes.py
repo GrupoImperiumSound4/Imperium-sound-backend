@@ -18,11 +18,10 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
         key="access_token",
         value=result["access_token"],
         httponly=True,
-        secure=False,       # False para localhost, True para HTTPS en producción
+        secure=True,       # False para localhost, True para HTTPS en producción
         samesite="lax",
         max_age=604800,
         path="/",
-        domain=None         # None para localhost
     )
 
     
