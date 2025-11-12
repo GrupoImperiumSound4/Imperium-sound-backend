@@ -8,7 +8,7 @@ def get_current_user_dependency(request: Request, db: Session = Depends(get_db))
     token = AuthService.get_token_from_request(request)
     
     if not token:
-        raise HTTPException(status_code=401, detail="No autenticado")
+        raise HTTPException(status_code=401, detail="No autenticado - Token no encontrado")
     
     payload = AuthService.verify_token(token)
     
