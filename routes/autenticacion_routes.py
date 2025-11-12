@@ -17,10 +17,12 @@ async def login_user(data: Login, db: SessionDepends, response: Response):
     response.set_cookie(
         key="access_token",
         value=result["access_token"],
-        secure=True,       # False para localhost, True para HTTPS en producción
+        httponly=True,
+        secure=True,       # False para localhost, True para HTTPS
         samesite="lax",
         max_age=604800,
         path="/",
+        domain=None
     )
 
     

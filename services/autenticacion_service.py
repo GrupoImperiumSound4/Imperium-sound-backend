@@ -10,7 +10,6 @@ class AuthService:
     @staticmethod
     def crear_usuario(db: Session, data: Registro):
         try:
-            # Verificar si el usuario ya existe
             existe = db.execute(
                 text("SELECT id FROM users WHERE email = :email"),
                 {"email": data.email}
@@ -19,7 +18,6 @@ class AuthService:
             if existe:
                 raise HTTPException(status_code=400, detail="El email ya está registrado")
 
-            # Insertar usuario
             result = db.execute(
                 text("INSERT INTO users (name, email, password, role) VALUES (:name, :email, :password, 'user') RETURNING id"),
                 {"name": data.name, "email": data.email, "password": data.password}
@@ -42,7 +40,6 @@ class AuthService:
     @staticmethod
     def login_user(db: Session, data: Login):
         try:
-            # Buscar usuario con su rol
             user = db.execute(
                 text("SELECT id, name, email, password, role FROM users WHERE email = :email"),
                 {"email": data.email}
@@ -51,11 +48,10 @@ class AuthService:
             if not user or user.password != data.password:
                 raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-            # Crear token JWT incluyendo el rol
             token_data = {
                 "user_id": user.id,
                 "email": user.email,
-                "role": user.role,  # Incluir rol en el token
+                "role": user.role,
                 "exp": datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
             }
             
